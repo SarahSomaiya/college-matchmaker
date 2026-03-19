@@ -2,10 +2,23 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CollegeCard } from "@/components/CollegeCard";
 import { HowItWorks } from "@/components/HowItWorks";
-import { colleges } from "@/lib/collegeData";
+import { College, getColleges } from "@/lib/collegeData";
+import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles, Shield, TrendingUp } from "lucide-react";
 
 export default function Home() {
+  const [colleges, setColleges] = useState<College[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    getColleges().then((data) => {
+      if (mounted) setColleges(data);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const featuredColleges = colleges.filter((c) => c.featured);
 
   return (

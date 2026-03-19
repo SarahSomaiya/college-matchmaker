@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { GraduationCap, Menu, X } from "lucide-react";
+import { GraduationCap, Menu, X, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useCollege } from "@/context/CollegeContext";
+import { useTheme } from "@/context/ThemeContext";
 import { Badge } from "@/components/ui/badge";
 
 const navItems = [
@@ -17,6 +18,7 @@ export function Header() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { selectedColleges } = useCollege();
+  const { theme, toggle } = useTheme();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-lg">
@@ -51,6 +53,11 @@ export function Header() {
             </Link>
           ))}
         </nav>
+
+        {/* Theme toggle */}
+        <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
+          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </Button>
 
         {/* Mobile Menu Button */}
         <Button

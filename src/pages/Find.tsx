@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CollegeCard } from "@/components/CollegeCard";
-import { colleges, streams, exams, formatFees } from "@/lib/collegeData";
+import { getColleges, streams, exams, formatFees, getExamMaxScore, examScores, College } from "@/lib/collegeData";
 import { useCollege } from "@/context/CollegeContext";
 import { Search, SlidersHorizontal, GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -20,26 +20,106 @@ import { Badge } from "@/components/ui/badge";
 
 export default function Find() {
   const { searchParams, setSearchParams, searchResults, setSearchResults, selectedColleges } = useCollege();
-  
+
   const [formData, setFormData] = useState({
     studentName: searchParams?.studentName || "",
     stream: searchParams?.stream || "",
     exam: searchParams?.exam || "",
-    examScore: searchParams?.examScore || 200,
+    examScore: searchParams?.examScore || 150,
     budgetRange: [searchParams?.minBudget || 50000, searchParams?.maxBudget || 500000],
   });
-  
+
   const [hasSearched, setHasSearched] = useState(searchResults.length > 0);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const results = colleges.filter((college) => {
-      const matchesStream = !formData.stream || college.streams.includes(formData.stream);
-      const matchesBudget = college.fees >= formData.budgetRange[0] && college.fees <= formData.budgetRange[1];
-      return matchesStream && matchesBudget;
-    });
+  const [error, setError] = useState("");
 
+  const [budgetLimits, setBudgetLimits] = useState({ min: 10000, max: 1000000 });
+
+  const [allColleges, setAllColleges] = useState<College[]>([]);
+
+  // Get available exams for the selected stream
+  const getAvailableExams = () => {
+    if (!formData.stream) {
+      return exams;
+    }
+    return examScores
+      .filter(exam => exam.streams.includes(formData.stream))
+      .map(exam => exam.name);
+  };
+
+  // Handle stream change - if the current exam doesn't match the new stream,
+  // clear it so filtering doesn't accidentally exclude results.
+  const handleStreamChange = (value: string) => {
+    const availableExamsForStream = examScores
+      .filter((exam) => exam.streams.includes(value))
+      .map((exam) => exam.name);
+
+    const newFormData = { ...formData, stream: value };
+
+    if (formData.exam && !availableExamsForStream.includes(formData.exam)) {
+      newFormData.exam = "";
+      newFormData.examScore = 0;
+    }
+
+    setFormData(newFormData);
+  };
+
+  const getFilteredColleges = (colleges: College[], values: typeof formData) => {
+    return colleges.filter((college) => {
+      const matchesStream = !values.stream || college.streams.includes(values.stream);
+      const matchesBudget =
+        college.fees >= values.budgetRange[0] &&
+        college.fees <= values.budgetRange[1];
+      const matchesScore =
+        !values.exam ||
+        (values.examScore >= college.examScoreRange.min &&
+          values.examScore <= college.examScoreRange.max);
+
+      if (!matchesStream || !matchesBudget || !matchesScore) {
+        console.log("College", college.name, "does not match:", {
+          matchesStream,
+          matchesBudget,
+          matchesScore,
+          values,
+        });
+      }
+
+      return matchesStream && matchesBudget && matchesScore;
+    });
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      console.log("Loading colleges in Find page...");
+      const colleges = await getColleges();
+      console.log("Loaded colleges:", colleges);
+      setAllColleges(colleges);
+      if (colleges.length > 0) {
+        const fees = colleges.map((c) => c.fees).filter((f) => f > 0);
+        const minFee = Math.min(...fees);
+        const maxFee = Math.max(...fees);
+        setBudgetLimits({ min: minFee, max: maxFee });
+
+        // If no search params, set default to full range
+        if (!searchParams?.minBudget && !searchParams?.maxBudget) {
+          setFormData((prev) => ({
+            ...prev,
+            budgetRange: [minFee, maxFee],
+          }));
+        }
+      }
+
+      setSearchResults(colleges);
+      setHasSearched(true);
+    };
+    loadData();
+  }, [setSearchResults]);
+
+  useEffect(() => {
+    if (!hasSearched || allColleges.length === 0) return;
+
+    const filtered = getFilteredColleges(allColleges, formData);
+    setSearchResults(filtered);
     setSearchParams({
       studentName: formData.studentName,
       stream: formData.stream,
@@ -48,8 +128,25 @@ export default function Find() {
       minBudget: formData.budgetRange[0],
       maxBudget: formData.budgetRange[1],
     });
-    
-    setSearchResults(results);
+  }, [formData, allColleges, hasSearched, setSearchParams, setSearchResults]);
+
+  const examMaxScore = getExamMaxScore(formData.exam);
+  const defaultExamScore = Math.floor(examMaxScore * 0.8);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    // Validation: Check if exam is valid for the selected stream
+    if (formData.stream && formData.exam) {
+      const selectedExamData = examScores.find((e) => e.name === formData.exam);
+      if (selectedExamData && !selectedExamData.streams.includes(formData.stream)) {
+        setError(`${formData.exam} is not a valid entrance exam for ${formData.stream}. Please select a relevant exam.`);
+        return;
+      }
+    }
+
+    // Make sure we show results when the user submits the form
     setHasSearched(true);
   };
 
@@ -92,7 +189,7 @@ export default function Find() {
                     <Label htmlFor="stream">Stream / Field of Study</Label>
                     <Select
                       value={formData.stream}
-                      onValueChange={(value) => setFormData({ ...formData, stream: value })}
+                      onValueChange={handleStreamChange}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select stream" />
@@ -117,7 +214,7 @@ export default function Find() {
                         <SelectValue placeholder="Select exam" />
                       </SelectTrigger>
                       <SelectContent>
-                        {exams.map((exam) => (
+                        {getAvailableExams().map((exam) => (
                           <SelectItem key={exam} value={exam}>
                             {exam}
                           </SelectItem>
@@ -127,15 +224,24 @@ export default function Find() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="score">Exam Score (out of 300)</Label>
+                    <Label htmlFor="score">Exam Score (0-{examMaxScore})</Label>
                     <Input
                       id="score"
                       type="number"
                       min={0}
-                      max={300}
+                      max={examMaxScore}
                       placeholder="Enter your score"
                       value={formData.examScore}
-                      onChange={(e) => setFormData({ ...formData, examScore: Number(e.target.value) })}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (value < 0) {
+                          setFormData({ ...formData, examScore: 0 });
+                        } else if (value > examMaxScore) {
+                          setFormData({ ...formData, examScore: examMaxScore });
+                        } else {
+                          setFormData({ ...formData, examScore: value });
+                        }
+                      }}
                     />
                   </div>
 
@@ -147,8 +253,8 @@ export default function Find() {
                       </span>
                     </div>
                     <Slider
-                      min={10000}
-                      max={1000000}
+                      min={budgetLimits.min}
+                      max={budgetLimits.max}
                       step={10000}
                       value={formData.budgetRange}
                       onValueChange={(value) => setFormData({ ...formData, budgetRange: value })}
@@ -160,6 +266,11 @@ export default function Find() {
                     <Search className="h-4 w-4" />
                     Find Colleges
                   </Button>
+                  {error && (
+                    <div className="text-destructive text-sm font-medium mt-2 animate-pulse">
+                      {error}
+                    </div>
+                  )}
                 </form>
               </CardContent>
             </Card>
@@ -173,10 +284,10 @@ export default function Find() {
                   <GraduationCap className="h-10 w-10 text-primary-foreground" />
                 </div>
                 <h3 className="font-display text-xl font-bold text-foreground">
-                  Start Your Search
+                  Loading Colleges...
                 </h3>
                 <p className="mt-2 text-muted-foreground max-w-md">
-                  Fill in your details on the left and click "Find Colleges" to see matching results
+                  Please wait while we load all available colleges
                 </p>
               </div>
             ) : searchResults.length === 0 ? (
@@ -188,7 +299,7 @@ export default function Find() {
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      Found <span className="font-semibold text-foreground">{searchResults.length}</span> colleges
+                      {searchParams ? "Found" : "Showing all"} <span className="font-semibold text-foreground">{searchResults.length}</span> colleges
                       {formData.studentName && ` for ${formData.studentName}`}
                     </p>
                   </div>
@@ -203,7 +314,7 @@ export default function Find() {
                     </Link>
                   )}
                 </div>
-                
+
                 <div className="grid sm:grid-cols-2 gap-6">
                   {searchResults.map((college, index) => (
                     <div

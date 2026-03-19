@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { College } from "@/lib/collegeData";
+import { loadDataset } from "@/lib/loadDataset";
 
 interface SearchParams {
   studentName: string;
