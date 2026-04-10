@@ -1,11 +1,14 @@
 import { College, formatFees, getChanceLevel, calculateAdmissionChance } from "@/lib/collegeData";
+import { placeholderImage } from "@/lib/collegeImages";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Star, Check, Plus, TrendingUp, Wallet, Users } from "lucide-react";
+import { MapPin, Star, Check, Plus, TrendingUp, Wallet, Users, Heart, ExternalLink } from "lucide-react";
 import { useCollege } from "@/context/CollegeContext";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface CollegeCardProps {
   college: College;
@@ -15,13 +18,17 @@ interface CollegeCardProps {
 }
 
 export function CollegeCard({ college, showChance = false, examScore = 0, budget = 0 }: CollegeCardProps) {
-  const { addToCompare, removeFromCompare, isSelected } = useCollege();
+  const { addToCompare, removeFromCompare, isSelected, addToShortlist, removeFromShortlist, isShortlisted } = useCollege();
   const selected = isSelected(college.id);
+  const shortlisted = isShortlisted(college.id);
+  const [imageError, setImageError] = useState(false);
+  const navigate = useNavigate();
   
   const admissionChance = showChance ? calculateAdmissionChance(college, examScore, budget) : 0;
   const chanceLevel = getChanceLevel(admissionChance);
 
-  const handleToggleSelect = () => {
+  const handleToggleSelect = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (selected) {
       removeFromCompare(college.id);
     } else {
@@ -29,17 +36,30 @@ export function CollegeCard({ college, showChance = false, examScore = 0, budget
     }
   };
 
+  const handleToggleShortlist = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (shortlisted) {
+      removeFromShortlist(college.id);
+    } else {
+      addToShortlist(college);
+    }
+  };
+
+  const websiteUrl = `https://www.google.com/search?q=${encodeURIComponent(college.name + " official website")}`;
+
   return (
     <Card
+      onClick={() => navigate(`/college/${college.id}`)}
       className={cn(
-        "group overflow-hidden transition-all duration-300 hover:shadow-card-hover shadow-card border-border/50",
+        "group overflow-hidden transition-all duration-300 hover:shadow-card-hover shadow-card border-border/50 cursor-pointer flex flex-col",
         selected && "ring-2 ring-primary"
       )}
     >
-      <div className="relative h-44 overflow-hidden">
+      <div className="relative h-44 overflow-hidden shrink-0">
         <img
-          src={college.image}
+          src={imageError ? placeholderImage : college.image}
           alt={college.name}
+          onError={() => setImageError(true)}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
@@ -47,6 +67,13 @@ export function CollegeCard({ college, showChance = false, examScore = 0, budget
         {college.featured && (
           <Badge className="absolute top-3 left-3 gradient-accent border-0">Featured</Badge>
         )}
+        
+        <button
+          onClick={handleToggleShortlist}
+          className="absolute top-3 right-3 h-8 w-8 flex items-center justify-center rounded-full bg-background/50 backdrop-blur-md transition-colors hover:bg-background/80 z-10 hover:scale-110"
+        >
+          <Heart className={cn("h-4 w-4 transition-colors", shortlisted ? "fill-red-500 text-red-500" : "text-foreground")} />
+        </button>
         
         <div className="absolute bottom-3 left-3 right-3">
           <div className="flex items-center gap-1 text-primary-foreground">
@@ -80,22 +107,34 @@ export function CollegeCard({ college, showChance = false, examScore = 0, budget
             <p className="font-display text-lg font-bold text-primary">{formatFees(college.fees)}</p>
           </div>
           
-          <Button
-            variant={selected ? "default" : "outline"}
-            size="sm"
-            onClick={handleToggleSelect}
-            className="gap-1"
-          >
-            {selected ? (
-              <>
-                <Check className="h-4 w-4" /> Selected
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4" /> Compare
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <a 
+              href={websiteUrl} 
+              target="_blank" 
+              rel="noreferrer" 
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+              title="Official Website"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+            <Button
+              variant={selected ? "default" : "outline"}
+              size="sm"
+              onClick={handleToggleSelect}
+              className="gap-1"
+            >
+              {selected ? (
+                <>
+                  <Check className="h-4 w-4" /> Selected
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" /> Compare
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {showChance && (

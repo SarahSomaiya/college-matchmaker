@@ -11,6 +11,8 @@ import Home from "./pages/Home";
 import Find from "./pages/Find";
 import Compare from "./pages/Compare";
 import Contact from "./pages/Contact";
+import CollegeDetail from "./pages/CollegeDetail";
+import Shortlist from "./pages/Shortlist";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +33,8 @@ const App = () => (
                   <Route path="/find" element={<Find />} />
                   <Route path="/compare" element={<Compare />} />
                   <Route path="/contact" element={<Contact />} />
+                  <Route path="/college/:id" element={<CollegeDetail />} />
+                  <Route path="/shortlist" element={<Shortlist />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

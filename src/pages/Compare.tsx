@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { calculateAdmissionChance, formatFees, getChanceLevel } from "@/lib/collegeData";
 import { Link } from "react-router-dom";
 import { ArrowLeft, X, BarChart3 } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from "recharts";
 import {
   Table,
   TableBody,
@@ -24,16 +24,20 @@ const CHART_COLORS = [
 ];
 
 export default function Compare() {
-  const { selectedColleges, removeFromCompare, searchParams, clearCompare } = useCollege();
+  const { selectedColleges, removeFromCompare, searchParams, clearCompare, addToShortlist, removeFromShortlist, isShortlisted } = useCollege();
 
   const examScore = searchParams?.examScore || 200;
   const budget = searchParams?.maxBudget || 500000;
 
+  const formatName = (name: string) => name.split(" ").slice(0, 2).join(" ");
+
   const chartData = selectedColleges.map((college, index) => ({
-    name: college.name.split(" ").slice(0, 2).join(" "),
+    name: formatName(college.name),
     value: calculateAdmissionChance(college, examScore, budget),
     color: CHART_COLORS[index % CHART_COLORS.length],
   }));
+
+
 
   if (selectedColleges.length === 0) {
     return (
@@ -134,7 +138,7 @@ export default function Compare() {
           ))}
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="max-w-2xl mx-auto mb-8">
           {/* Pie Chart */}
           <Card className="shadow-card">
             <CardHeader>
@@ -162,7 +166,7 @@ export default function Compare() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip
+                    <RechartsTooltip
                       formatter={(value: number) => [`${value}%`, "Admission Chance"]}
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
@@ -176,12 +180,13 @@ export default function Compare() {
               </div>
             </CardContent>
           </Card>
+        </div>
 
-          {/* Comparison Table */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="font-display">Detailed Comparison</CardTitle>
-            </CardHeader>
+        {/* Comparison Table */}
+        <Card className="shadow-card mb-8">
+          <CardHeader>
+            <CardTitle className="font-display">Detailed Comparison</CardTitle>
+          </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <Table>
@@ -191,6 +196,7 @@ export default function Compare() {
                       <TableHead>Location</TableHead>
                       <TableHead>Fees</TableHead>
                       <TableHead>Chance</TableHead>
+                      <TableHead>Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -228,6 +234,19 @@ export default function Compare() {
                               {chance}%
                             </span>
                           </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant={isShortlisted(college.id) ? "outline" : "default"} 
+                              size="sm"
+                              onClick={() => {
+                                if (isShortlisted(college.id)) removeFromShortlist(college.id);
+                                else addToShortlist(college);
+                              }}
+                              className={cn(isShortlisted(college.id) && "text-red-500 hover:text-red-600 border-red-500/20")}
+                            >
+                              {isShortlisted(college.id) ? "Shortlisted" : "Shortlist"}
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -236,7 +255,6 @@ export default function Compare() {
               </div>
             </CardContent>
           </Card>
-        </div>
 
         {/* Streams Comparison */}
         <Card className="mt-8 shadow-card">

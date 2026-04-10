@@ -1,3 +1,6 @@
+import { loadDataset } from "./loadDataset";
+import { getFallbackImageUrl } from "./collegeImages";
+
 export interface College {
   id: string;
   name: string;
@@ -11,8 +14,6 @@ export interface College {
   featured?: boolean;
 }
 
-import { loadDataset } from "./loadDataset";
-
 export async function getColleges(): Promise<College[]> {
   console.log("Getting colleges...");
   // `loadDataset` already reads the Excel file and normalises the two
@@ -22,21 +23,26 @@ export async function getColleges(): Promise<College[]> {
   const rows = await loadDataset();
   console.log("Raw rows from dataset:", rows);
 
-  const colleges: College[] = rows.map((row) => ({
-    id: String(row.id || "").trim(),
-    name: String(row.name || "").trim(),
-    location: String(row.location || "").trim(),
-    streams: Array.isArray(row.streams) ? row.streams : [],
-    fees: Number(row.fees) || 0,
-    rating: Number(row.rating) || 0,
-    image: String(row.image || "").trim(),
-    acceptanceRate: Number(row.acceptanceRate) || 0,
-    examScoreRange: {
-      min: Number(row.examScoreRange?.min) || 0,
-      max: Number(row.examScoreRange?.max) || 0,
-    },
-    featured: row.featured === true || String(row.featured).toLowerCase() === "true",
-  }));
+  const colleges: College[] = rows.map((row) => {
+    const collegeId = String(row.id || "").trim();
+    const imageUrl = String(row.image || "").trim();
+    
+    return {
+      id: collegeId,
+      name: String(row.name || "").trim(),
+      location: String(row.location || "").trim(),
+      streams: Array.isArray(row.streams) ? row.streams : [],
+      fees: Number(row.fees) || 0,
+      rating: Number(row.rating) || 0,
+      image: imageUrl || getFallbackImageUrl(collegeId),
+      acceptanceRate: Number(row.acceptanceRate) || 0,
+      examScoreRange: {
+        min: Number(row.examScoreRange?.min) || 0,
+        max: Number(row.examScoreRange?.max) || 0,
+      },
+      featured: row.featured === true || String(row.featured).toLowerCase() === "true",
+    };
+  });
 
   console.log("Processed colleges:", colleges);
 

@@ -11,13 +11,14 @@ const navItems = [
   { name: "Home", path: "/" },
   { name: "Find Colleges", path: "/find" },
   { name: "Compare", path: "/compare" },
+  { name: "Shortlist", path: "/shortlist" },
   { name: "Contact", path: "/contact" },
 ];
 
 export function Header() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { selectedColleges } = useCollege();
+  const { selectedColleges, shortlist } = useCollege();
   const { theme, toggle } = useTheme();
 
   return (
@@ -47,6 +48,11 @@ export function Header() {
                 {item.name === "Compare" && selectedColleges.length > 0 && (
                   <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center gradient-accent text-xs">
                     {selectedColleges.length}
+                  </Badge>
+                )}
+                {item.name === "Shortlist" && shortlist.length > 0 && (
+                  <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white text-xs border-0">
+                    {shortlist.length}
                   </Badge>
                 )}
               </Button>
@@ -83,6 +89,9 @@ export function Header() {
                   {item.name}
                   {item.name === "Compare" && selectedColleges.length > 0 && (
                     <Badge className="ml-auto gradient-accent">{selectedColleges.length}</Badge>
+                  )}
+                  {item.name === "Shortlist" && shortlist.length > 0 && (
+                    <Badge className="ml-auto bg-red-500 hover:bg-red-600 text-white border-0">{shortlist.length}</Badge>
                   )}
                 </Button>
               </Link>

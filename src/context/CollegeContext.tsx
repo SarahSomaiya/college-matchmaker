@@ -20,6 +20,10 @@ interface CollegeContextType {
   setSearchParams: (params: SearchParams) => void;
   searchResults: College[];
   setSearchResults: (results: College[]) => void;
+  shortlist: College[];
+  addToShortlist: (college: College) => void;
+  removeFromShortlist: (collegeId: string) => void;
+  isShortlisted: (collegeId: string) => boolean;
 }
 
 const CollegeContext = createContext<CollegeContextType | undefined>(undefined);
@@ -28,6 +32,18 @@ export function CollegeProvider({ children }: { children: ReactNode }) {
   const [selectedColleges, setSelectedColleges] = useState<College[]>([]);
   const [searchParams, setSearchParams] = useState<SearchParams | null>(null);
   const [searchResults, setSearchResults] = useState<College[]>([]);
+  const [shortlist, setShortlist] = useState<College[]>(() => {
+    try {
+      const stored = localStorage.getItem("collegeShortlist");
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem("collegeShortlist", JSON.stringify(shortlist));
+  }, [shortlist]);
 
   const addToCompare = (college: College) => {
     if (selectedColleges.length < 5 && !selectedColleges.find((c) => c.id === college.id)) {
@@ -47,6 +63,20 @@ export function CollegeProvider({ children }: { children: ReactNode }) {
     return selectedColleges.some((c) => c.id === collegeId);
   };
 
+  const addToShortlist = (college: College) => {
+    if (!shortlist.find((c) => c.id === college.id)) {
+      setShortlist([...shortlist, college]);
+    }
+  };
+
+  const removeFromShortlist = (collegeId: string) => {
+    setShortlist(shortlist.filter((c) => c.id !== collegeId));
+  };
+
+  const isShortlisted = (collegeId: string) => {
+    return shortlist.some((c) => c.id === collegeId);
+  };
+
   return (
     <CollegeContext.Provider
       value={{
@@ -59,6 +89,10 @@ export function CollegeProvider({ children }: { children: ReactNode }) {
         setSearchParams,
         searchResults,
         setSearchResults,
+        shortlist,
+        addToShortlist,
+        removeFromShortlist,
+        isShortlisted,
       }}
     >
       {children}
