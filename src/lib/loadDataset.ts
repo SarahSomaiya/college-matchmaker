@@ -16,7 +16,7 @@ export interface RawCollegeRow {
  * arrays/objects and make sure we never lose a row due to missing data.
  */
 export async function loadDataset(): Promise<RawCollegeRow[]> {
-  const datasetUrl = `${import.meta.env.BASE_URL}collegeDataset_100.xlsx`;
+  const datasetUrl = `${import.meta.env.BASE_URL}collegeDataset_560.xlsx`;
   console.log("Loading dataset from", datasetUrl);
   try {
     const response = await fetch(datasetUrl);
