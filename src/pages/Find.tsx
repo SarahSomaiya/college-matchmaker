@@ -72,8 +72,7 @@ export default function Find() {
         college.fees <= values.budgetRange[1];
       const matchesScore =
         !values.exam ||
-        (values.examScore >= college.examScoreRange.min &&
-          values.examScore <= college.examScoreRange.max);
+        values.examScore >= college.examScoreRange.min;
 
       if (!matchesStream || !matchesBudget || !matchesScore) {
         console.log("College", college.name, "does not match:", {
