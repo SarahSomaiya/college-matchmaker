@@ -119,15 +119,6 @@ export default function CollegeDetail() {
         <div className="grid lg:grid-cols-3 gap-10">
           
           <div className="lg:col-span-2 space-y-10">
-            {/* Gallery Mockup */}
-            <section>
-              <h2 className="font-display text-2xl font-bold mb-4">Campus Gallery</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <img src={`https://source.unsplash.com/400x300/?university,building&sig=${college.id}1`} alt="Campus 1" className="rounded-xl object-cover h-32 w-full shadow-sm hover:opacity-90 transition-opacity" />
-                <img src={`https://source.unsplash.com/400x300/?students,campus&sig=${college.id}2`} alt="Campus 2" className="rounded-xl object-cover h-32 w-full shadow-sm hover:opacity-90 transition-opacity" />
-                <img src={`https://source.unsplash.com/400x300/?library,study&sig=${college.id}3`} alt="Campus 3" className="rounded-xl object-cover h-32 w-full shadow-sm hover:opacity-90 transition-opacity hidden md:block" />
-              </div>
-            </section>
 
             {/* Tabs Section */}
             <Tabs defaultValue="courses" className="w-full">
