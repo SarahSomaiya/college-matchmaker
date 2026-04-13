@@ -1,4 +1,4 @@
-import { GraduationCap, Heart } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function Footer() {
@@ -29,7 +29,7 @@ export function Footer() {
           </nav>
 
           <p className="flex items-center gap-1 text-sm text-muted-foreground">
-            Made with <Heart className="h-4 w-4 text-accent fill-accent" /> for students
+            Made with <GraduationCap className="h-4 w-4 text-accent" /> for students
           </p>
         </div>
 
